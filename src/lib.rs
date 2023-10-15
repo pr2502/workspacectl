@@ -7,6 +7,7 @@ use cache::Key;
 use workspace::Workspace;
 
 mod cache;
+mod config;
 mod workspace;
 
 pub fn init(ssh: Option<String>, path: String, name: Option<String>) -> Result<()> {
@@ -49,6 +50,7 @@ fn init_local(path: String, name: Option<String>) -> Result<()> {
 
 pub fn list() -> Result<()> {
     let mut stdout = io::stdout().lock();
+    stdout.write_all(b"~\n").context("writing to stdout")?;
     for workspace in workspace::list() {
         stdout
             .write_all(workspace.as_bytes())
