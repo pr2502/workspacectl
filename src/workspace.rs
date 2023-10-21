@@ -9,7 +9,6 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{ensure, Context, Result};
 use atomicwrites::AtomicFile;
-use log::{error, info, warn};
 use walkdir::WalkDir;
 
 use crate::cache::{self, Key};
@@ -118,7 +117,7 @@ pub fn list() -> Vec<String> {
     let dir = match dir_path() {
         Ok(dir) => dir,
         Err(err) => {
-            error!("error reading workspace list: {err}");
+            eprintln!("ERR  reading workspace list: {err}");
             return Vec::new();
         }
     };
@@ -132,15 +131,15 @@ pub fn list() -> Vec<String> {
                 .to_str()
                 .map(|name| {
                     if name.contains(|ch: char| ch.is_ascii_control()) {
-                        info!(
-                            "ignoring path with ascii control characters {:?}",
+                        eprintln!(
+                            "INFO ignoring path with ascii control characters {:?}",
                             entry.path(),
                         );
                         return false;
                     }
                     if name.contains(FORBIDDEN_CHARACTERS) {
-                        info!(
-                            "ignoring path with forbidden characters {:?} {:?}",
+                        eprintln!(
+                            "INFO ignoring path with forbidden characters {:?} {:?}",
                             FORBIDDEN_CHARACTERS,
                             entry.path(),
                         );
@@ -149,8 +148,8 @@ pub fn list() -> Vec<String> {
                     true
                 })
                 .unwrap_or_else(|| {
-                    info!(
-                        "ignoring path with invalid utf-8 characters {:?}",
+                    eprintln!(
+                        "INFO ignoring path with invalid utf-8 characters {:?}",
                         entry.path(),
                     );
                     false
@@ -160,7 +159,7 @@ pub fn list() -> Vec<String> {
             // Filter out IO errors
             Ok(entry) => Some(entry),
             Err(err) => {
-                warn!("encountered an error while gathering workspace list: {err}");
+                eprintln!("WARN encountered an error while gathering workspace list: {err}");
                 None
             }
         })

@@ -1,5 +1,4 @@
 use clap::{Parser, Subcommand};
-use log::debug;
 
 #[derive(Parser, Debug)]
 struct Opts {
@@ -54,10 +53,7 @@ enum Cmd {
 }
 
 fn main() -> anyhow::Result<()> {
-    env_logger::builder().format_timestamp(None).init();
-
     let opts = Opts::parse();
-    debug!("opts = {opts:#?}");
     match opts.cmd {
         Cmd::New { ssh, path, name } => workspacectl::init(ssh, path, name),
         Cmd::List {} => workspacectl::list(),

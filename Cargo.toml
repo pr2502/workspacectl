@@ -12,8 +12,6 @@ anyhow = "1.0.75"
 atomicwrites = "0.4.2"
 clap = { version = "4.4.6", features = ["derive"] }
 dirs = "5.0.1"
-env_logger = { version = "0.10.0", default-features = false, features = ["auto-color", "color", "regex"] }
-log = "0.4.20"
 serde = "1.0.189"
 serde_derive = "1.0.189"
 serde_json = "1.0.107"
