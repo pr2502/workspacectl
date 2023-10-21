@@ -10,21 +10,22 @@ struct Opts {
 #[derive(Subcommand, Debug)]
 enum Cmd {
     /// Create a new workspace
-    #[command(name = "new", visible_alias("init"))]
-    Init {
+    New {
         /// SSH host
         #[clap(long)]
         ssh: Option<String>,
 
         /// Workspace path
         ///
-        /// Path can be either relative or absolute. Relative paths are relative to the current
-        /// working directory for local workspaces and to the remote `$HOME` for remote workspaces.
+        /// Path can be either relative or absolute. Relative paths are relative
+        /// to the current working directory for local workspaces and to the
+        /// remote `$HOME` for remote workspaces.
+        #[clap(default_value = ".")]
         path: String,
 
-        /// Name of the project to initialize.
+        /// Name for the new workspace
         ///
-        /// Defaults to the last
+        /// Defaults to the last segment of canonicalized PATH.
         name: Option<String>,
     },
 
@@ -37,10 +38,18 @@ enum Cmd {
         name: String,
     },
 
-    /// Open a terminal in the current workspace root
+    /// Print the workspace config as JSON
+    Cat {
+        /// Workspace name
+        ///
+        /// Defaults to the current open workspace.
+        name: Option<String>,
+    },
+
+    /// Open a terminal in the current workspace
     Terminal {},
 
-    /// Open an editor in the current workspace root
+    /// Open an editor in the current workspace
     Editor {},
 }
 
@@ -50,9 +59,10 @@ fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
     debug!("opts = {opts:#?}");
     match opts.cmd {
-        Cmd::Init { ssh, path, name } => workspacectl::init(ssh, path, name),
+        Cmd::New { ssh, path, name } => workspacectl::init(ssh, path, name),
         Cmd::List {} => workspacectl::list(),
         Cmd::Open { name } => workspacectl::open(name),
+        Cmd::Cat { name } => workspacectl::cat(name),
         Cmd::Terminal {} => workspacectl::terminal(),
         Cmd::Editor {} => workspacectl::editor(),
     }

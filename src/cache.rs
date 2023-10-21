@@ -1,8 +1,9 @@
 //! Read write the state from a global key-value store
 //!
-//! The store is a simple file store in the platform program cache (`~/.cache/workspacectl`), each
-//! key maps to a file name and the value is the file's contents stripped of whitespace. Values
-//! must always be valid UTF-8 and cannot containe newlines.
+//! The store is a simple file store in the platform's program cache storage
+//! (`~/.cache/workspacectl`), each key maps to a file name and the value is the
+//! file's contents stripped of whitespace. Values must always be valid utf-8
+//! and cannot contain newlines.
 
 use std::fs;
 use std::io::Write;

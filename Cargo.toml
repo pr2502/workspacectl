@@ -16,5 +16,6 @@ env_logger = { version = "0.10.0", default-features = false, features = ["auto-c
 log = "0.4.20"
 serde = "1.0.189"
 serde_derive = "1.0.189"
+serde_json = "1.0.107"
 toml = { version = "0.8.2", features = ["parse", "display"] }
 walkdir = "2.4.0"

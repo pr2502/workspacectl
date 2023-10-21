@@ -12,7 +12,7 @@ mod workspace;
 
 pub fn init(ssh: Option<String>, path: String, name: Option<String>) -> Result<()> {
     match ssh {
-        Some(_) => todo!("new --ssh"),
+        Some(host) => init_ssh(host),
         None => init_local(path, name),
     }
 }
@@ -33,9 +33,15 @@ fn init_local(path: String, name: Option<String>) -> Result<()> {
             .with_context(|| format!("directory name is an invalid workspace name {dir:?}"))?
             .to_owned(),
     };
+    // Try to make the path relative to the user's `$HOME` directory
+    let dir = match dirs::home_dir().and_then(|home| dir.strip_prefix(home).ok()) {
+        Some(relative) => relative.to_owned(),
+        None => dir,
+    };
+
     let dir = dir
         .to_str()
-        .with_context(|| format!("path {dir:?} is not valid UTF-8"))?
+        .with_context(|| format!("path {dir:?} is not valid utf-8"))?
         .to_owned();
 
     let workspace = Workspace {
@@ -46,6 +52,10 @@ fn init_local(path: String, name: Option<String>) -> Result<()> {
         shell: None,
     };
     workspace::create(&workspace).context("create new workspace config")
+}
+
+fn init_ssh(host: String) -> Result<()> {
+    todo!()
 }
 
 pub fn list() -> Result<()> {
@@ -63,6 +73,17 @@ pub fn list() -> Result<()> {
 pub fn open(name: String) -> Result<()> {
     let _workspace = workspace::read(&name).context("reading workpsace definition")?;
     cache::write(Key::Current, name).context("setting currently open workspace")?;
+    Ok(())
+}
+
+pub fn cat(name: Option<String>) -> Result<()> {
+    let name = match name {
+        Some(name) => name,
+        None => cache::read(Key::Current).context("get current workspace name")?,
+    };
+    let workspace = workspace::read(&name).context("reading workpsace definition")?;
+    let json = serde_json::to_string(&workspace).context("serializing workspace definition")?;
+    println!("{json}");
     Ok(())
 }
 
@@ -104,18 +125,22 @@ pub fn editor() -> Result<()> {
 
     if let Some(ssh) = &workspace.ssh {
         Command::new("kitty")
+            .args(["--title", &format!("{}: {editor_cmd} {dir}", ssh.host)])
             .args([
                 "ssh",
                 "-t",
                 &ssh.host,
-                &format!("cd {dir}; exec /usr/bin/bash --login {editor_cmd} .",),
+                &format!("cd {dir}; exec /usr/bin/bash --login -c '{editor_cmd} .'",),
             ])
             .spawn()
             .context("spawn terminal")?;
     } else {
+        let show_dir = &dir;
+        let dir = dirs::home_dir().unwrap().join(dir).canonicalize().unwrap();
         Command::new("kitty")
+            .args(["--title", &format!("{editor_cmd} {show_dir}")])
             .args([editor_cmd, "."])
-            .current_dir(&workspace.dir)
+            .current_dir(dir)
             .spawn()
             .context("spawn terminal")?;
     }
