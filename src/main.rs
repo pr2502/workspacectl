@@ -19,7 +19,7 @@ enum Cmd {
         /// Path can be either relative or absolute. Relative paths are relative
         /// to the current working directory for local workspaces and to the
         /// remote `$HOME` for remote workspaces.
-        #[clap(default_value = ".")]
+        #[clap(default_value = ".", verbatim_doc_comment)]
         path: String,
 
         /// Name for the new workspace

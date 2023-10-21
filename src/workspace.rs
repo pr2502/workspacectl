@@ -39,6 +39,10 @@ const FORBIDDEN_CHARACTERS: &[char] = &[
 /// Checks all the preconditions for workspace name
 fn file_path(name: &str) -> Result<PathBuf> {
     ensure!(
+        !name.starts_with('.'),
+        "workspace name cannot start with a '.'",
+    );
+    ensure!(
         !name.contains(|ch: char| ch.is_ascii_control()),
         "workspace name cannot contain ascii control characters",
     );
@@ -107,7 +111,12 @@ pub fn create(workspace: &Workspace) -> Result<()> {
     });
     AtomicFile::new(&path, atomicwrites::DisallowOverwrite)
         .write(|file| file.write_all(buf.as_bytes()))
-        .with_context(|| format!("atomically write workspace file at {path:?}"))
+        .with_context(|| format!("atomically write workspace file at {path:?}"))?;
+    println!(
+        "created workspace {name:?} at {path:?}",
+        name = &workspace.name,
+    );
+    Ok(())
 }
 
 /// List all workspace definitions

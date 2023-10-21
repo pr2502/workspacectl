@@ -2,7 +2,7 @@ use std::env;
 use std::io::{self, Write};
 use std::process::Command;
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use cache::Key;
 use workspace::Workspace;
 
@@ -12,7 +12,7 @@ mod workspace;
 
 pub fn init(ssh: Option<String>, path: String, name: Option<String>) -> Result<()> {
     match ssh {
-        Some(host) => init_ssh(host),
+        Some(host) => init_ssh(host, path, name),
         None => init_local(path, name),
     }
 }
@@ -54,8 +54,43 @@ fn init_local(path: String, name: Option<String>) -> Result<()> {
     workspace::create(&workspace).context("create new workspace config")
 }
 
-fn init_ssh(host: String) -> Result<()> {
-    todo!()
+fn init_ssh(host: String, path: String, name: Option<String>) -> Result<()> {
+    // TODO parse host into user@host:port
+
+    // Check the target directory exists
+    let output = Command::new("ssh")
+        .arg(&host)
+        .arg(format!("cd {path}"))
+        .output()
+        .context("verify remote workspace path")?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(anyhow!("{stderr}")).context("verify remote workpace path");
+    }
+
+    let name = match name {
+        Some(name) => name,
+        None => path
+            .split('/')
+            .last()
+            .with_context(|| format!("cannot infer name for workspace with remote path {path:?}"))?
+            .to_owned(),
+    };
+
+    let workspace = Workspace {
+        name,
+        dir: path,
+        ssh: Some(workspace::Ssh {
+            command: None,
+            user: None,
+            host,
+            port: None,
+            identity_file: None,
+        }),
+        editor: None,
+        shell: None,
+    };
+    workspace::create(&workspace).context("create new workspace config")
 }
 
 pub fn list() -> Result<()> {
@@ -92,7 +127,7 @@ pub fn terminal() -> Result<()> {
     let dir = &workspace.dir;
     let shell_cmd = match &workspace.shell {
         Some(shell) => shell.command.as_str(),
-        None => "/usr/bin/bash", // TODO find first which exists from a list of shells
+        None => "/usr/bin/bash", // TODO use remote user's default `$SHELL`
     };
 
     if let Some(ssh) = &workspace.ssh {
@@ -120,7 +155,7 @@ pub fn editor() -> Result<()> {
     let dir = &workspace.dir;
     let editor_cmd = match &workspace.editor {
         Some(editor) => editor.command.as_str(),
-        None => "vim", // TODO find first which exists from a list of editors
+        None => "vim", // TODO find remote user's default `$EDITOR`
     };
 
     if let Some(ssh) = &workspace.ssh {
